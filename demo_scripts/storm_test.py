@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+import re
 import time
 from datetime import datetime
 import subprocess
@@ -9,7 +11,8 @@ client = MongoClient('172.28.128.22', 40000)
 db = client.cep_storm
 collection = db.lte_pgw_exp
 
-topology_path = "/home/vagrant/petrel_exp2/"
+topology_path = os.path.dirname(os.path.abspath(__file__)) + "/../topology/"
+create_py_path = topology_path + "create.py"
 submit_sh = topology_path + "cluster_run.sh"
 kill_sh = topology_path + "cluster_kill.sh"
 kill_all_sh = topology_path + "kill_GenericTopology.sh"
@@ -82,6 +85,9 @@ with open(spout_log_path, "r") as f:
         elif line.find("emit") != -1:
             emit_end_timestamp = float(line.split(" ")[-2])
 
+if consume_end_timestamp < dump_end_timestamp:
+    raise Exception("topology stuck at somewhere.")
+
 raw_count = 1000000
 
 print("Spout start consuming {0} records at {1}".format(raw_count,
@@ -106,3 +112,35 @@ print("The 1th record walks through the topology in {1} seconds".format(raw_coun
                                                                         dump_start_timestamp - consume_start_timestamp))
 print("The {0}th record walks through the topology in {1} seconds".format(raw_count,
                                                                           dump_end_timestamp - consume_end_timestamp))
+
+# record attr to mongodb
+insert_doc = {"spout": 0, "split": 0, "group": 0, "output": 0, "record_count": 0,
+              "spout_consume_time": 0, "spout_emit_time": 0, "output_time": 0,
+              "first_go_through": 0, "last_go_through": 0, "total_time": 0
+              }
+
+with open(create_py_path, "r") as create_py_file:
+    for i, line in enumerate(create_py_file):
+        if line.find("exp_spout.ExpSpout") != -1:
+            number = re.search(r", ([0-9]+)\)", line).group(1)
+            insert_doc["spout"] = int(number)
+        elif line.find("split_bolt.SplitBolt") != -1:
+            number = re.search(r", ([0-9]+)\)", line).group(1)
+            insert_doc["split"] = int(number)
+        elif line.find("group_bolt.GroupBolt") != -1:
+            number = re.search(r", ([0-9]+)\)", line).group(1)
+            insert_doc["group"] = int(number)
+        elif line.find("output_bolt.OutputBolt") != -1:
+            number = re.search(r", ([0-9]+)\)", line).group(1)
+            insert_doc["output"] = int(number)
+
+insert_doc["record_count"] = row_count
+insert_doc["spout_consume_time"] = consume_end_timestamp - consume_start_timestamp
+insert_doc["spout_emit_time"] = emit_end_timestamp - consume_start_timestamp
+insert_doc["output_time"] = dump_end_timestamp - dump_start_timestamp
+insert_doc["first_go_through"] = dump_start_timestamp - consume_start_timestamp
+insert_doc["last_go_through"] = dump_end_timestamp - consume_end_timestamp
+insert_doc["total_time"] = dump_end_timestamp - consume_start_timestamp
+
+print(insert_doc)
+db.exp_record.insert_one(insert_doc)

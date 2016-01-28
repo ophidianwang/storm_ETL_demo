@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import os
+import re
 import time
 from datetime import datetime
 import subprocess
 import uuid
 from pymongo import MongoClient
 import paramiko
-import os
 import random
 
 start_timestamp = 0
@@ -46,6 +47,7 @@ start_timestamp = time.time()
 
 # cp/scp file for fluentd parsing
 
+
 dest_dir = "/home/vagrant/source/"
 original_dir = "/home/vagrant/source_split/"
 files = os.listdir(original_dir)
@@ -63,25 +65,34 @@ dest_file = "/home/vagrant/source/" + uuid.uuid4().hex
 subprocess.call(["cp", "/home/vagrant/source/CGW11_pgw_processed_01_20151105020743.cdr.gz.csv", dest_file])
 """
 
-# then check mongodb, out input data should be remodeled from 100000 to 37397 / 1085420 to 570720
+# then check mongodb, out input data should be remodeled from 1085420 to 570720
 row_count = 0
 row_progress = 0
-dump_timestamp = 0
+dump_start_timestamp = 0
+over_counter = 0
+diff_threshold = 1000
+tolerance_count = 300
+sleep_time = 0.1
+tolerance_time = tolerance_count * sleep_time
 while True:
     row_count = collection.count()  # get current row count
-    if dump_timestamp == 0 and row_count != 0:
-        dump_timestamp = time.time()  # mark timestamp which means start writing
+    if dump_start_timestamp == 0 and row_count != 0:
+        dump_start_timestamp = time.time()  # mark timestamp which means start writing
     diff = row_count - row_progress
     if diff > 1000:
         print("There are {0} records in mongodb now.".format(row_count))
         row_progress = row_count
-    # end loop when no more documents are writen to mongodb
-    if row_count >= target_count:
-        end_timestamp = time.time()
-        break
-    time.sleep(0.3)  # in case query affect mongodb performance...
+        over_counter = 0
+    elif row_count != 0:
+        over_counter += 1
+        if over_counter > 50:
+            print("over_counter: {0}".format(over_counter))
 
-end_timestamp = time.time()
+    if over_counter >= tolerance_count:
+        break
+    time.sleep(sleep_time)  # in case too many queries affect mongodb performance...
+
+dump_end_timestamp = time.time() - tolerance_time
 
 log_path = "/realtime/storm_log/storm_petrel_{0}_{1}.log"
 today = datetime.now().strftime("%Y%m%d")
@@ -100,13 +111,13 @@ print(
 print("Storm Spout get all message from kafka {0} , {1}".format(get_all_msg_timestamp,
                                                                 datetime.fromtimestamp(get_all_msg_timestamp).strftime(
                                                                         "%Y-%m-%d %H:%M:%S")))
-print("Storm Bolt start dumping to mongodb at {0} , {1}".format(dump_timestamp,
-                                                                datetime.fromtimestamp(dump_timestamp).strftime(
+print("Storm Bolt start dumping to mongodb at {0} , {1}".format(dump_end_timestamp,
+                                                                datetime.fromtimestamp(dump_end_timestamp).strftime(
                                                                         "%Y-%m-%d %H:%M:%S")))
 print("ETL end at {0} , {1}".format(end_timestamp, datetime.fromtimestamp(end_timestamp).strftime("%Y-%m-%d %H:%M:%S")))
 print(
     "(fluentd, kafka, spout) spend {0} seconds processing {1} records.".format(get_all_msg_timestamp - start_timestamp,
                                                                                raw_count))
-print("realtime lag of storm is {0} seconds".format(dump_timestamp - get_all_msg_timestamp))
-print("(bolt, mongodb) spend {0} seconds processing {1} records.".format(end_timestamp - dump_timestamp, raw_count))
+print("realtime lag of storm is {0} seconds".format(dump_end_timestamp - get_all_msg_timestamp))
+print("(bolt, mongodb) spend {0} seconds processing {1} records.".format(end_timestamp - dump_end_timestamp, raw_count))
 print("ETL spend {0} seconds processing {1} records.".format(end_timestamp - start_timestamp, raw_count))
