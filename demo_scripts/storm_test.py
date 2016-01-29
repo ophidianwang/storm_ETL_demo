@@ -85,7 +85,7 @@ with open(spout_log_path, "r") as f:
         elif line.find("emit") != -1:
             emit_end_timestamp = float(line.split(" ")[-2])
 
-if consume_end_timestamp < dump_end_timestamp:
+if consume_end_timestamp > dump_end_timestamp or consume_end_timestamp < consume_start_timestamp:
     raise Exception("topology stuck at somewhere.")
 
 raw_count = 1000000
@@ -112,6 +112,7 @@ print("The 1th record walks through the topology in {1} seconds".format(raw_coun
                                                                         dump_start_timestamp - consume_start_timestamp))
 print("The {0}th record walks through the topology in {1} seconds".format(raw_count,
                                                                           dump_end_timestamp - consume_end_timestamp))
+print("total time: {0} seconds".format(dump_end_timestamp - consume_start_timestamp))
 
 # record attr to mongodb
 insert_doc = {"spout": 0, "split": 0, "group": 0, "output": 0, "record_count": 0,

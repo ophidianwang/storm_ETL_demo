@@ -9,7 +9,7 @@ ssh $srv05 "sudo apt-get install -y python-virtualenv"
 ssh $srv06 "sudo apt-get install -y python-virtualenv"
 
 cd ~
-virtualenv petrel_env
+virtualenv --always-copy petrel_env
 deactivate
 source ~/petrel_env/bin/activate
 easy_install petrel==0.9.4.0.3

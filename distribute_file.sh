@@ -10,7 +10,7 @@ rm  /home/vagrant/source/*
 ssh $srv05 "rm /home/vagrant/source/*"
 ssh $srv06 "rm /home/vagrant/source/*"
 
-sleep 2
+sleep 5
 
 # copy raw file
 cp lte_pgw/CGW11_pgw_processed_01_201511050* /home/vagrant/source

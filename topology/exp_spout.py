@@ -6,6 +6,7 @@ Created on Tue Jan 05 11:07:12 2016
 """
 
 import time
+import socket
 import logging
 from threading import Thread
 from pykafka import KafkaClient
@@ -37,7 +38,8 @@ class EmitThread(Thread):
                 if self.counter % 10000 == 0:
                     log.warning("#{0}".format(self.counter))
                 if self.counter == 1000000:  # mark time
-                    log.warning("emit process 1000000 records at {0} (timestamp)".format(time.time()))
+                    log.warning("emit process 1000000 records at {0} (timestamp@{1})".format(time.time(),
+                                                                                             socket.gethostname()))
             else:
                 time.sleep(0.01)
 
