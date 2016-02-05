@@ -79,8 +79,8 @@ class ExpSpout(Spout):
                                                          auto_commit_enable=False
                                                          )
 
-        self.emit_thread = EmitThread("emit_thread")
-        self.emit_thread.start()
+        # self.emit_thread = EmitThread("emit_thread")
+        # self.emit_thread.start()
 
         log.debug("ExpSpout initialize done")
 
@@ -114,8 +114,8 @@ class ExpSpout(Spout):
                     if self.counter == 0:
                         log.warning("start process 1000000 records at {0} (timestamp)".format(time.time()))
                     self.counter += 1
-                    self.emit_thread.append(message.value)
-                    # storm.emit([message.value])
+                    # self.emit_thread.append(message.value)
+                    storm.emit([message.value])
                 if self.counter == 1000000:  # mark time
                     log.warning("finish process 1000000 records at {0} (timestamp)".format(time.time()))
                     # self.counter = 0

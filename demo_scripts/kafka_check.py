@@ -37,7 +37,7 @@ client = KafkaClient(hosts='172.28.128.22:9092,172.28.128.23:9092,172.28.128.24:
 print("%s" % client.topics)  # 列出有哪些topic
 topic = client.topics['cep_storm']  # 取得指定的kafka_topic物件
 
-consumer = topic.get_balanced_consumer(consumer_group="cep_group_1",
+consumer = topic.get_balanced_consumer(consumer_group="cep_group_check",
                                        zookeeper_connect='172.28.128.22:2181,172.28.128.23:2181,172.28.128.24:2181',
                                        consumer_timeout_ms=500,
                                        auto_commit_enable=False)  # 建立consumer
