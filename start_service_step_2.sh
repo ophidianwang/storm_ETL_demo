@@ -14,7 +14,7 @@ sleep 3
 sleep 3
 
 # manual start kafka-manger with password
-nohup ssh $srv06  "sudo /home/vagrant/kafka-manager-1.3.0.4/bin/kafka-manager -Dconfig.file=/home/vagrant/kafka-manager-1.3.0.4/conf/application.conf -Dhttp.port=9001" &
+nohup ssh $srv06  "sudo /home/vagrant/kafka-manager-1.3.0.4/bin/kafka-manager -Dconfig.file=/home/vagrant/kafka-manager-1.3.0.4/conf/application-z3.conf -Dhttp.port=9009" &
 
 # kill existing topology
 source /home/vagrant/petrel_env/bin/activate

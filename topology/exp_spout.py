@@ -6,6 +6,7 @@ Created on Tue Jan 05 11:07:12 2016
 """
 
 import time
+import random
 import socket
 import logging
 from threading import Thread
@@ -72,12 +73,11 @@ class ExpSpout(Spout):
         self.conf = conf
         self.client = KafkaClient(hosts=conf["ExpSpout.initialize.hosts"])
         self.topic = self.client.topics[str(conf["ExpSpout.initialize.topics"])]
-        self.consumer = self.topic.get_balanced_consumer(consumer_group=str(conf["ExpSpout.initialize.consumer_group"]),
-                                                         zookeeper_connect=str(conf["ExpSpout.initialize.zookeeper"]),
-                                                         consumer_timeout_ms=int(conf[
-                                                                                     "ExpSpout.initialize.consumer_timeout_ms"]),
-                                                         auto_commit_enable=False
-                                                         )
+        self.consumer = self.topic.get_balanced_consumer(
+            consumer_group=str(conf["ExpSpout.initialize.consumer_group"] + str(random.randint(0, 99))),
+            zookeeper_connect=str(conf["ExpSpout.initialize.zookeeper"]),
+            consumer_timeout_ms=int(conf["ExpSpout.initialize.consumer_timeout_ms"]),
+            auto_commit_enable=False)
 
         # self.emit_thread = EmitThread("emit_thread")
         # self.emit_thread.start()
@@ -102,8 +102,8 @@ class ExpSpout(Spout):
             log.debug("self.consumer is not ready yet.")
             return
 
-        if self.counter >= 1000000:
-            return
+        #if self.counter >= 1000000:
+        #    return
 
         # log.debug("ExpSpout.nextTuple()")
         # time.sleep(3)  # prototype減速觀察
